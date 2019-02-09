@@ -1,3 +1,17 @@
+// created by: WestleyR
+// email: westleyr@nym.hush.com
+// https://github.com/WestleyR/pac
+// date: Feb 8, 2018
+// version-1.0.0
+//
+// The Clear BSD License
+//
+// Copyright (c) 2019 WestleyR
+// All rights reserved.
+//
+// This software is licensed under a Clear BSD License.
+//
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +21,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-1, Feb 8, 2019"
+#define SCRIPT_VERSION "v1.0.0-beta-2, Feb 8, 2019"
 
-void sfp(int input) {
+void pac(int input) {
 
     // write to stdout
     int output = fileno(stdout);
@@ -26,7 +40,7 @@ void sfp(int input) {
     // st_blksize is size_t
     buffer = malloc(filestats.st_blksize);
     if (buffer == NULL) {
-        fprintf(stderr, "SEGMENTATION FAULT. FUCK YOU");
+        fprintf(stderr, "SEGMENTATION FAULT.");
     }
 
     ssize_t readbytes;
@@ -45,7 +59,7 @@ int main(int argc, char *argv[]) {
     // this gives us a file descriptor to pass to the write call
     if (argc < 2) {
         descriptor = fileno(stdin);
-        sfp(descriptor);
+        pac(descriptor);
     } else {
         argv++;
         while (*argv) {
@@ -63,12 +77,12 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "%d", errno);
                 exit(2);
             }
-            sfp(descriptor);
+            pac(descriptor);
             argv++;
         }
     }
 }
 
 //
-// End main-sfp.c
+// End main-pac.c
 //
