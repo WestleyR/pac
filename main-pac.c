@@ -23,6 +23,20 @@
 
 #define SCRIPT_VERSION "v1.0.0-beta-2, Feb 8, 2019"
 
+void helpMenu(char* SCRIPT_NAME) {
+    printf("USAGE:\n");
+    printf("  %s [option] <path/file>\n", SCRIPT_NAME);
+    printf("\n");
+    printf("Print file, or stdin to stdout.\n");
+    printf("\n");
+    exit(0);
+}
+
+void versionPrint() {
+    printf("%s\n", SCRIPT_VERSION);
+    exit(0);
+}
+
 void pac(int input) {
 
     // write to stdout
@@ -53,8 +67,22 @@ void pac(int input) {
 }
 
 int main(int argc, char *argv[]) {
-    int descriptor;
+//    char *SCRIPT_NAME = argv[0];
     char *SCRIPT_NAME = *argv;
+
+    int descriptor;
+
+
+    if (argc >= 1) {
+        for (int i=1; i < argc; i++) {
+            if (strcmp(argv[i], "--help") == 0) {
+                helpMenu(SCRIPT_NAME);
+            } else if (strcmp(argv[i], "--version") == 0) {
+                versionPrint();
+            }
+        }
+    }
+
     // if there are no args just read from stdin
     // this gives us a file descriptor to pass to the write call
     if (argc < 2) {
