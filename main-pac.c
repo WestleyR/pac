@@ -1,7 +1,7 @@
 // created by: WestleyR
 // email: westleyr@nym.hush.com
 // https://github.com/WestleyR/pac
-// date: Feb 8, 2018
+// date: Feb 9, 2019
 // version-1.0.0
 //
 // The Clear BSD License
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-2, Feb 8, 2019"
+#define SCRIPT_VERSION "v1.0.0-beta-3, Feb 9, 2019"
 
 void helpMenu(char* SCRIPT_NAME) {
     printf("USAGE:\n");
