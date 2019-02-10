@@ -6,7 +6,7 @@ Pac is a **simple**, and **fast** file printer. Prints files, and stdin/pipe.
 
 ## Install:
 
-This is how to install `sfp` from source:
+This is how to install PAC from source:
 
 ```
 cd to/wherever/you/want/this/repo/
