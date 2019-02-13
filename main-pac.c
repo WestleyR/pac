@@ -1,7 +1,7 @@
 // created by: WestleyR
 // email: westleyr@nym.hush.com
 // https://github.com/WestleyR/pac
-// date: Feb 9, 2019
+// date: Feb 13, 2019
 // version-1.0.0
 //
 // The Clear BSD License
@@ -21,13 +21,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-3, Feb 9, 2019"
+#define SCRIPT_VERSION "v1.0.0-beta-4, Feb 13, 2019"
 
 void helpMenu(char* SCRIPT_NAME) {
     printf("USAGE:\n");
     printf("  %s [option] <path/file>\n", SCRIPT_NAME);
     printf("\n");
-    printf("Print file, or stdin to stdout.\n");
+    printf("Print file, or stdin to stdout, or stderr out (comming soon).\n");
     printf("\n");
     exit(0);
 }
@@ -38,13 +38,14 @@ void versionPrint() {
 }
 
 void pac(int input) {
+    ssize_t readbytes;
+//    ssize_t writtenbytes;
 
     // write to stdout
     int output = fileno(stdout);
 
     // buffer for the fast reads
     static char* buffer;
-
     struct stat filestats;
 
     if (fstat(output, &filestats) == -1) {
@@ -54,24 +55,22 @@ void pac(int input) {
     // st_blksize is size_t
     buffer = malloc(filestats.st_blksize);
     if (buffer == NULL) {
-        fprintf(stderr, "SEGMENTATION FAULT.");
+        fprintf(stderr, "SEGMENTATION FAULT.\n");
+        exit(100);
     }
-
-    ssize_t readbytes;
 
     readbytes = read(input, buffer, filestats.st_blksize);
     while (readbytes > 0) {
-        ssize_t writtenbytes = write(output, buffer, readbytes);
+//        writtenbytes = write(output, buffer, readbytes);
+        write(output, buffer, readbytes);
         readbytes = read(input, buffer, filestats.st_blksize);
     }
 }
 
 int main(int argc, char *argv[]) {
-//    char *SCRIPT_NAME = argv[0];
     char *SCRIPT_NAME = *argv;
 
     int descriptor;
-
 
     if (argc >= 1) {
         for (int i=1; i < argc; i++) {
@@ -91,19 +90,29 @@ int main(int argc, char *argv[]) {
     } else {
         argv++;
         while (*argv) {
-            if (strcmp("-", *argv) == 0) {
+            if (strcmp(*argv, "-") == 0) {
                 descriptor = fileno(stdin);
             } else {
                 if (access(*argv, F_OK ) == -1) {
                     fprintf(stderr, "%s: No such file or directory: %s\n", SCRIPT_NAME, *argv);
-                    exit(2);
+                    return(2);
+                }
+                struct stat path_stat;
+                stat(*argv, &path_stat);
+                if (!S_ISREG(path_stat.st_mode)) {
+                    fprintf(stderr, "%s: %s: Is a directory.\n", SCRIPT_NAME, *argv);
+                    return(2);
+                }
+
+                if (!access(*argv, R_OK) == 0) {
+                    fprintf(stderr, "%s: %s: Permision denied.\n", SCRIPT_NAME, *argv);
+                    return(2);
                 }
                 descriptor = open(*argv, O_RDONLY);
             }
             if (descriptor < 0) {
-                fprintf(stderr, "An error has occured...\n");
-                fprintf(stderr, "%d", errno);
-                exit(2);
+                fprintf(stderr, "ERROR: An error has occured: unable to read file.\n");
+                return(2);
             }
             pac(descriptor);
             argv++;
