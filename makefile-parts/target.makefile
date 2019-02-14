@@ -1,4 +1,4 @@
 .PHONY:
-static: $(SRC)
+$(TARGET): $(SRC)
 	$(CC) $(FLAG) -o $(TARGET) $(SRC)
 

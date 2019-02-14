@@ -1,9 +1,9 @@
 #!/bin/sh
 # Created by: WestleyR
 # email: westleyr@nym.hush.com
-# Date: Feb 8, 2018
-# https://github.com/WestleyR/file-printer
-# Version-1.0.0
+# Date: Feb 13, 2019
+# https://github.com/WestleyR/pac
+# Version-1.0.1
 #
 # The Clear BSD License
 #
@@ -19,18 +19,26 @@ MAKEFILE="Makefile"
 
 MAKEFRAG="makefile-parts"
 
-ALL_MAKE="all.makefile"
-STATIC_MAKE="static.makefile"
-INSTALL_MAKE="install.makefile"
-CLEAN_MAKE="clean.makefile"
-UNINSTALL_MAKE="uninstall.makefile"
+ALL_MAKE="${MAKEFRAG}/all.makefile"
+TARGET_MAKE="${MAKEFRAG}/target.makefile"
+STATIC_MAKE="${MAKEFRAG}/static.makefile"
+INSTALL_MAKE="${MAKEFRAG}/install.makefile"
+CLEAN_MAKE="${MAKEFRAG}/clean.makefile"
+UNINSTALL_MAKE="${MAKEFRAG}/uninstall.makefile"
 
-FILES_NEEDED="main-pac.c ${MAKEFRAG}/${ALL_MAKE} \
-${MAKEFRAG}/${STATIC_MAKE} ${MAKEFRAG}/${INSTALL_MAKE} ${MAKEFRAG}/${CLEAN_MAKE} \
-${MAKEFRAG}/${UNINSTALL_MAKE}"
+SRCDIR="src"
 
-PREFIX="/usr/bin"
+FILES_NEEDED="${SRCDIR}/main-pac.c ${ALL_MAKE} \
+${STATIC_MAKE} ${INSTALL_MAKE} ${CLEAN_MAKE} \
+${UNINSTALL_MAKE}"
+
+PREFIX="/usr/local/bin"
 COMPILER="gcc"
+
+CFLAGS=""
+
+NON_ROOT_PREFIX="${HOME}/.local/bin"
+AUTO_PREFIX="false"
 
 help_menu() {
     echo "USAGE:
@@ -39,6 +47,10 @@ help_menu() {
 OPTIONS:
   --prefix=string    : set install prefix.
   --compiler=string  : set the compiler, eg. gcc, tcc...
+  -a, --auto-prefix  : automaticly chose between: ${PREFIX} (when installed as root)
+                       or: ${NON_ROOT_PREFIX} (when installed by user). this option
+                       is used for package manager (clib).
+  -v, --compile-v    : compile with verbose on.
 "
 
     exit 0
@@ -48,40 +60,30 @@ for arg in "$@"; do
     if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
         help_menu
     elif [ $(echo "$arg" | strcomp -s="--prefix=") -eq 0 ]; then
-        PREFIX=`echo "$arg" | sed 's/--prefix=//'`
+        PREFIX=`echo "$arg" | strcomp -S=9`
     elif [ $(echo "$arg" | strcomp -s="--compiler=") -eq 0 ]; then
-        COMPILER=`echo "$arg" | sed 's/--compiler=//'`
+        COMPILER=`echo "$arg" | strcomp -S=11`
+    elif [ "$arg" = "-a" ] || [ "$arg" = "--auto-prefix" ]; then
+        AUTO_PREFIX="true"
+    elif [ "$arg" = "-v" ] || [ "$arg" = "--compile-v" ]; then
+        CFLAGS="-v"
     fi
 done
 
-echo "  Checking dependcies:"
-echo -n "  Checking for: pl... "
-if ! [ -x "$(command -v pl)" ]; then
-    echo "missing"
-    echo "ERROR: Need 'pl'"
-    echo
-    echo "Please download/install pl from:"
-    echo "https://github.com/WestleyR/print-line"
-    exit 1
-fi
-pl --green "yes"
-
-
-
-pl -n --yellow "  Checking for: " -r --cyan "strcomp... "
+echo -n "  Checking for: strcomp... "
 if ! [ -x "$(command -v strcomp)" ]; then
-    pl --red "missing"
+    echo "no"
     echo "ERROR: Need 'strcomp'"
     echo
     echo "Please download/install strcomp from:"
     echo "https://github.com/WestleyR/strcomp"
     exit 1
 fi
-pl --green "yes"
+echo "yes"
 
-pl -n --yellow "  Checking for: " -r --cyan "make... "
+echo -n "  Checking for: make... "
 if ! [ -x "$(command -v make)" ]; then
-    pl --red "missing"
+    echo "no"
     echo "ERROR: Need 'make'"
     echo
     echo "Please download/install it by:"
@@ -89,16 +91,15 @@ if ! [ -x "$(command -v make)" ]; then
     echo ">> $ sudo apt-get install build-essential"
     exit 1
 fi
-pl --green "yes"
+echo "yes"
 
-pl -n --yellow "  Checking for: " -r --cyan "${COMPILER}... "
+echo -n "  Checking for: ${COMPILER}... "
 if ! [ -x "$(command -v ${COMPILER})" ]; then
-    pl --red "no"
-
+    echo "no"
     COMPILER_B="tcc"
-    pl -n --yellow "  Now looking for backup compiler: " -r --cyan "${COMPILER_B}... "
+    echo -n "  Now looking for backup compiler: ${COMPILER_B}... "
     if ! [ -x "$(command -v ${COMPILER_B})" ]; then
-        pl --red "no"
+        echo "no"
         echo "ERROR: No compiler found."
         echo "ERROR: Need 'gcc', or 'tcc'"
         echo
@@ -106,7 +107,7 @@ if ! [ -x "$(command -v ${COMPILER})" ]; then
         echo ">> $ sudo apt-get install build-essential"
         exit 1
     else
-        pl --green "yes"
+        echo "yes"
         echo
         echo "ERROR: The compiler (${COMPILER}), is not found..."
         echo "But, you do have ${COMPILER_B}. Try:"
@@ -116,28 +117,42 @@ if ! [ -x "$(command -v ${COMPILER})" ]; then
         exit 1
     fi
 fi
-pl --green "yes"
+echo "yes"
 
-pl -p "  %{magenta}Setting prefix : %{r}%{white}${PREFIX}${r}"
-pl -p "  %{magenta}Setting compiler : %{r}%{white}${COMPILER}%{r}"
+echo "  Setting prefix : ${PREFIX}"
+echo "  Setting compiler : ${COMPILER}"
 
-pl --yellow "  Checking for existing files..."
+echo "  Checking for existing files..."
 
 for file in $FILES_NEEDED; do
-    pl -n -p "  %{yellow}Checking for file %{r}: %{cyan}${file}...%{r} "
+    echo -n "  Checking for file : ${file}... "
     if [ ! -e "$file" ]; then
-        pl --red "no"
-        pl --red "ERROR: " -r "File missing : ${file}"
+        echo "no"
+        echo "ERROR: File missing : ${file}"
         echo
         echo "Try redownloading print-line from https://github.com/WestleyR/pac"
         echo
         exit 100
     else
-        pl --green "yes"
+        echo "yes"
     fi
 done
 
-pl --blue "  Building makefile..."
+if [ "$AUTO_PREFIX" = "true" ]; then
+    if [ $(id -u) != 0 ]; then
+        PREFIX="$NON_ROOT_PREFIX"
+        if [ -e "$PREFIX" ]; then
+            mkdir -p "$PREFIX"
+        fi
+        if [ -z $(echo "$PATH" | grep '.local/bin') ]; then
+            echo "WARGING!!!!!"
+            echo "PLEASE ADD: ${PREFIX} TO YOUR PATH!!!"
+            echo "WARGING!!!!!"
+        fi
+    fi
+fi
+
+echo "  Building makefile..."
 
 cat << EOF > "$MAKEFILE"
 # Created by: WestleyR
@@ -169,46 +184,56 @@ EOF
 if [ "$COMPILER" = "gcc" ]; then
     cat << EOF >> "$MAKEFILE"
 
-PREFIX = ${PREFIX}
-CODE_NAME = main-pac.c
-SCRIPT_NAME = pac
+TARGET = pac
+SRDDIR = src
+DEPDIR = deps
 
-COMPILER = ${COMPILER}
+PREFIX = ${PREFIX}
+
+CC = ${COMPILER}
 
 STATIC_BUILD_FLAG = -static
 GCC_FLAGS = -std=c99
-FLAG = 
+FLAG = ${CFLAGS}
+
+SRC = \$(wildcard \$(SRDDIR)/*.c)
 
 EOF
 else
     cat << EOF >> "$MAKEFILE"
 
+TARGET = pac
+SRDDIR = src
+DEPDIR = deps
+
 PREFIX = ${PREFIX}
-CODE_NAME = main-pac.c
-SCRIPT_NAME = pac
 
-COMPILER = ${COMPILER}
+CC = ${COMPILER}
 
-FLAG = 
+FLAG = ${CFLAGS}
+
+SRC = \$(wildcard \$(SRDDIR)/*.c)
 
 EOF
 fi
 
-
-cat "${MAKEFRAG}/${ALL_MAKE}" >> "$MAKEFILE"
+cat "$ALL_MAKE" >> "$MAKEFILE"
+cat "$TARGET_MAKE" >> "$MAKEFILE"
 
 if [ "$COMPILER" != "tcc" ]; then
-    cat "${MAKEFRAG}/${STATIC_MAKE}" >> "$MAKEFILE"
+    cat "$STATIC_MAKE" >> "$MAKEFILE"
 fi
 
-cat "${MAKEFRAG}/${INSTALL_MAKE}" >> "$MAKEFILE"
-cat "${MAKEFRAG}/${CLEAN_MAKE}" >> "$MAKEFILE"
-cat "${MAKEFRAG}/${UNINSTALL_MAKE}" >> "$MAKEFILE"
+cat "$INSTALL_MAKE" >> "$MAKEFILE"
+cat "$CLEAN_MAKE" >> "$MAKEFILE"
+cat "$UNINSTALL_MAKE" >> "$MAKEFILE"
 
-pl --green "DONE." -e
-pl --green "Makefile ready; " -r "do:" -e
-pl -p "  %{yellow}$%{r} make %{cyan}[make_option]"
-pl -p "  %{yellow}$%{r} sudo make install"
+echo "DONE."
+echo
+echo "Makefile ready; do:"
+echo
+echo "  $ make [make_option]"
+echo "  $ sudo make install"
 echo
 
 #
