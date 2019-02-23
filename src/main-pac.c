@@ -1,7 +1,7 @@
 // created by: WestleyR
 // email: westleyr@nym.hush.com
 // https://github.com/WestleyR/pac
-// date: Feb 13, 2019
+// date: Feb 21, 2019
 // version-1.0.0
 //
 // The Clear BSD License
@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-4, Feb 13, 2019"
+#define SCRIPT_VERSION "v1.0.0-beta-5, Feb 21, 2019"
 
 void helpMenu(char* SCRIPT_NAME) {
     printf("USAGE:\n");
@@ -94,18 +94,17 @@ int main(int argc, char *argv[]) {
                 descriptor = fileno(stdin);
             } else {
                 if (access(*argv, F_OK ) == -1) {
-                    fprintf(stderr, "%s: No such file or directory: %s\n", SCRIPT_NAME, *argv);
+                    fprintf(stderr, "%s: %s: No such file or directory.\n", SCRIPT_NAME, *argv);
                     return(2);
                 }
-                struct stat path_stat;
-                stat(*argv, &path_stat);
-                if (!S_ISREG(path_stat.st_mode)) {
-                    fprintf(stderr, "%s: %s: Is a directory.\n", SCRIPT_NAME, *argv);
-                    return(2);
-                }
-
-                if (!access(*argv, R_OK) == 0) {
+                if (access(*argv, R_OK) != 0) {
                     fprintf(stderr, "%s: %s: Permision denied.\n", SCRIPT_NAME, *argv);
+                    return(2);
+                }
+                struct stat statbuf;
+                stat(*argv, &statbuf);
+                if (S_ISDIR(statbuf.st_mode) != '\0') {
+                    fprintf(stderr, "%s: %s: Is a directory.\n", SCRIPT_NAME, *argv);
                     return(2);
                 }
                 descriptor = open(*argv, O_RDONLY);
