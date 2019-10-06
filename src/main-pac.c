@@ -1,7 +1,7 @@
 // created by: WestleyR
 // email: westleyr@nym.hush.com
 // https://github.com/WestleyR/pac
-// date: Jun 15, 2019
+// date: Sep 22, 2019
 // version-1.0.0
 //
 // The Clear BSD License
@@ -12,7 +12,6 @@
 // This software is licensed under a Clear BSD License.
 //
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -21,13 +20,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-6, Jun 15, 2019"
+#define SCRIPT_VERSION "v1.0.0-beta-8, Sep 22, 2019"
+
+// To avoid that warning.
+// TODO: Theres proboly a better way to handle this.
+int fileno(const FILE*);
 
 void helpMenu(char* SCRIPT_NAME) {
     printf("USAGE:\n");
     printf("  %s [option] <path/file>\n", SCRIPT_NAME);
     printf("\n");
-    printf("Print file, or stdin to stdout, or stderr out (comming soon).\n");
+    printf("Print file, or stdin to stdout, or custom file (comming soon).\n");
     printf("\n");
     exit(0);
 }
@@ -38,14 +41,10 @@ void versionPrint() {
 }
 
 void pac(int input) {
-    ssize_t readbytes;
-//    ssize_t writtenbytes;
-
     // write to stdout
     int output = fileno(stdout);
 
-    // buffer for the fast reads
-    static char* buffer;
+    static char* filebuff;
     struct stat filestats;
 
     if (fstat(output, &filestats) == -1) {
@@ -54,21 +53,21 @@ void pac(int input) {
     }
 
     // st_blksize is size_t
-    buffer = malloc(filestats.st_blksize);
-    if (buffer == NULL) {
-        fprintf(stderr, "SEGMENTATION FAULT\n");
-        exit(100);
+    filebuff = malloc(filestats.st_blksize);
+    if (filebuff == NULL) {
+        perror("malloc");
+        fprintf(stderr, "malloc failed\n");
+        exit(255);
     }
 
-    readbytes = read(input, buffer, filestats.st_blksize);
-    while (readbytes > 0) {
-//        writtenbytes = write(output, buffer, readbytes);
-        write(output, buffer, readbytes);
-        readbytes = read(input, buffer, filestats.st_blksize);
+    ssize_t readb = read(input, filebuff, filestats.st_blksize);
+    while (readb > 0) {
+        write(output, filebuff, readb);
+        readb = read(input, filebuff, filestats.st_blksize);
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
     char *SCRIPT_NAME = *argv;
     int descriptor;
 
@@ -84,51 +83,38 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // if there are no args just read from stdin
-    // this gives us a file descriptor to pass to the write call
     if (argc < 2) {
         descriptor = fileno(stdin);
         pac(descriptor);
     } else {
-        argv++;
-        while (*argv != NULL) {
-//            if (strcmp(*argv, "-") == 0) {
-            if ((strlen(*argv) == 1) && (*argv[0] == '-')) {
+        for (int i = 1; i < argc; i++) {
+            if ((strlen(argv[i]) == 1) && (argv[i][0] == '-')) {
                 descriptor = fileno(stdin);
             } else {
-
-                if (access(*argv, F_OK ) != 0) {
-                    fprintf(stderr, "%s: %s: No such file or directory\n", SCRIPT_NAME, *argv);
-                    argv++;
+                if (access(argv[i], F_OK ) != 0) {
+                    fprintf(stderr, "%s: %s: No such file or directory\n", SCRIPT_NAME, argv[i]);
                     continue;
                 }
 
-                if (access(*argv, R_OK) != 0) {
-                    fprintf(stderr, "%s: %s: Permision denied\n", SCRIPT_NAME, *argv);
-                    argv++;
+                if (access(argv[i], R_OK) != 0) {
+                    fprintf(stderr, "%s: %s: Permision denied\n", SCRIPT_NAME, argv[i]);
                     continue;
                 }
 
                 struct stat statbuf;
-                stat(*argv, &statbuf);
-                if (S_ISDIR(statbuf.st_mode) != '\0') {
-                    fprintf(stderr, "%s: %s: Is a directory\n", SCRIPT_NAME, *argv);
-                    argv++;
+                stat(argv[i], &statbuf);
+                if (S_ISDIR(statbuf.st_mode) != 0) {
+                    fprintf(stderr, "%s: %s: Is a directory\n", SCRIPT_NAME, argv[i]);
                     continue;
-//                    return(2);
                 }
-                descriptor = open(*argv, O_RDONLY);
+                descriptor = open(argv[i], O_RDONLY);
             }
-//            printf("INFOP: %i\n", descriptor);
             if (descriptor < 0) {
-                fprintf(stderr, "%s: unable to open file: %s: %s\n", SCRIPT_NAME, *argv, strerror(errno));
-                argv++;
+                fprintf(stderr, "%s: unable to open file: %s: %s\n", SCRIPT_NAME, argv[i], strerror(errno));
                 continue;
-//                return(2);
             }
             pac(descriptor);
             close(descriptor);
-            argv++;
         }
     }
 }

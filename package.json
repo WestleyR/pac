@@ -1,9 +1,0 @@
-{
-  "name": "pac",
-  "version": "master",
-  "repo": "WestleyR/pac",
-  "description": "pac is a simple, and fast file printer. prints files, and stdin/pipe to stdout or strerror",
-  "keywords": ["print", "file", "stdin", "stdout", "stderror", "fast", "cat", "pac"],
-  "license": "The Clear BSD License, WestleyR All rights reserved.",
-  "install": "./configure -a && make install"
-}
