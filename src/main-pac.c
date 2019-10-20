@@ -1,7 +1,7 @@
 // created by: WestleyR
 // email: westleyr@nym.hush.com
 // https://github.com/WestleyR/pac
-// date: Sep 22, 2019
+// date: Oct 19, 2019
 // version-1.0.0
 //
 // The Clear BSD License
@@ -20,11 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SCRIPT_VERSION "v1.0.0-beta-8, Sep 22, 2019"
-
-// To avoid that warning.
-// TODO: Theres proboly a better way to handle this.
-int fileno(const FILE*);
+#define SCRIPT_VERSION "v1.0.0-beta-10, Oct 19, 2019"
 
 void helpMenu(char* SCRIPT_NAME) {
     printf("USAGE:\n");
